@@ -1,0 +1,5 @@
+/ACE.Step
+*.pyc
+__pycache__/
+.venv/
+*.wav

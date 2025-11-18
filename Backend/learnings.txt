@@ -1,0 +1,4 @@
+1. Running the code on the modal is not that hard.
+2. Create the a immage with the required dependencies
+   and then run a containner on that immage
+3. using the Nvidia L40S GPU form the modal
