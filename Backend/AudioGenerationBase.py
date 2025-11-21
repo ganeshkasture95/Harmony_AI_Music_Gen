@@ -6,4 +6,4 @@ class AudioGenerationBase(BaseModel):
     seed:int = -1
     guidance_scale: float = 15.0
     infer_step: int = 60
-    insturemental: bool = False
+    instrumental: bool = False
