@@ -332,7 +332,7 @@ def main():
     print(f"Endpoint URL: {endpoint_url}")
     
     request_data = GenerateFromDescriptionRequest(
-        full_described_song="A upbeat pop song about summer love and adventure.",
+        full_described_song="rain songs based on adventure ",
         guidance_scale=12.5,
     )
     
