@@ -38,6 +38,10 @@ music_gen_secrets = modal.Secret.from_name("music-gen-secret")
 #     print(os.environ["test"])
 # it was jist for the testing 
 
+
+# Modal-Key: wk-ARIhEkFou0xrFcWsYx0hkl
+# Modal-Secret: ws-OryftKUMTePRc15JLGNxSj
+
 class AudioGenerationBase(BaseModel):
     audio_duration: float = 180.0  # in seconds
     seed:int = -1
@@ -236,7 +240,7 @@ class MusicGenServer:
             categories=categories
         )
     
-    @modal.fastapi_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST", requires_proxy_auth=True)
     def generate(self) -> GenerateMusicResponse:
         output_dir = "/tmp/outputs"
         os.makedirs(output_dir, exist_ok=True)
@@ -260,26 +264,7 @@ class MusicGenServer:
 
         return GenerateMusicResponse(audio_data=audio_b64)
     
-    # @modal.fastapi_endpoint(method="POST")
-    # def generate_from_description(self, request:GenerateFromDescriptionRequest) -> GenerateMusicResponseS3:
-        
-    #     # Generate Prompt using the description
-    #     prompt = self.generate_prompt(request.full_described_song)
-        
-    #     # Generate Lyrics  for the song based on description
-    #     lyrics = ""
-    #     if not request.instrumental:
-    #         lyrics = self.generate_lyrics(request.full_described_song)
-            
-    #     return self.generate_and_uplode_to_s3(
-    #         prompt=prompt,
-    #         lyrics=lyrics,
-    #         description_for_categorization=request.full_described_song,
-    #         **request.model_dump(exclude={"full_described_song"})
-    #     )
-    
-    
-    @modal.fastapi_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST", requires_proxy_auth=True)
     def generate_from_description(self, request: GenerateFromDescriptionRequest) -> GenerateMusicResponseS3:
         # Generating a prompt
         prompt = self.generate_prompt(request.full_described_song)
@@ -291,7 +276,7 @@ class MusicGenServer:
         return self.generate_and_uplode_to_s3(prompt=prompt, lyrics=lyrics,
                                               description_for_categorization=request.full_described_song, **request.model_dump(exclude={"full_described_song"}))
     
-    @modal.fastapi_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST", requires_proxy_auth=True)
     def generate_with_lyrics(self, request:GenerateFromCustomLyricsRequest) -> GenerateMusicResponseS3:
         
         # generate prompt for the thumbnail image
@@ -304,7 +289,7 @@ class MusicGenServer:
             **request.model_dump(exclude={""})
         )
     
-    @modal.fastapi_endpoint(method="POST")
+    @modal.fastapi_endpoint(method="POST", requires_proxy_auth=True)
     def generate_with_described_lyrics(self, request: GenerateWithDescribedLyricsRequest) -> GenerateMusicResponseS3:
         
         # generate prompt for the thumbnail imag
@@ -336,11 +321,21 @@ def main():
         guidance_scale=12.5,
     )
     
+    # Modal-Key: wk-ARIhEkFou0xrFcWsYx0hkl
+    # Modal-Secret: ws-OryftKUMTePRc15JLGNxSj
+    
+    headers = { 
+        "Modal-Key": "wk-ARIhEkFou0xrFcWsYx0hkl",
+        "Modal-Secret": "ws-OryftKUMTePRc15JLGNxSj"
+    }
+    
+    
     payload = request_data.model_dump()
     
     response = requests.post(
         endpoint_url,
-        json=payload
+        json=payload,
+        headers=headers
     )
     response.raise_for_status()  # just call it, don’t assign it
     result = GenerateMusicResponseS3.model_validate(**response.json())
