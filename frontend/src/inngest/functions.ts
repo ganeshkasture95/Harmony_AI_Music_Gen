@@ -161,7 +161,7 @@ export const generateSong = inngest.createFunction(
                     await db.song.update({
                         where: { id: songId },
                         data: {
-                            categories: {
+                            category: {
                                 connectOrCreate: responseData.categories.map(
                                     (categoryName) => ({
                                         where: { name: categoryName },
