@@ -2,7 +2,7 @@
 
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "~/env";
@@ -28,7 +28,9 @@ export async function generateSong(generateRequest: GenerateRequest) {
   // await queueSong(generateRequest, 7.5, session.user.id);
   await queueSong(generateRequest, 15, session.user.id);
 
-  revalidatePath("/create");
+  // Bust the user's track list and dashboard stats
+  revalidateTag("user-songs");
+  revalidateTag("home-stats");
 }
 
 export async function queueSong(

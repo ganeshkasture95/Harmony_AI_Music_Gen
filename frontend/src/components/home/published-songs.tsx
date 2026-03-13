@@ -1,10 +1,9 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { Headphones, Play } from "lucide-react";
 import Image from "next/image";
 import { getPlayUrl } from "~/actions/generation";
 import { usePlayerStore } from "~/stores/use-player-store";
-import { Card } from "../ui/card";
 
 export interface PublishedSong {
   id: string;
@@ -32,51 +31,71 @@ export function PublishedSongs({ songs }: { songs: PublishedSong[] }) {
 
   if (songs.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No published songs yet. Be the first to publish!</p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border/60 bg-card/40 py-20">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Play className="h-6 w-6 text-primary" />
+        </div>
+        <p className="text-sm font-medium text-foreground">No published songs yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">Be the first to publish!</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {songs.map((song) => (
-        <Card
+        <button
           key={song.id}
-          className="group cursor-pointer overflow-hidden bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 hover:scale-105"
+          type="button"
+          className="group relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/60 bg-card text-left transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
           onClick={() => handlePlay(song)}
         >
-          <div className="relative aspect-square w-full overflow-hidden">
+          {/* Artwork */}
+          <div className="relative aspect-square w-full overflow-hidden bg-muted">
             {song.thumbnailUrl ? (
               <Image
                 src={song.thumbnailUrl}
                 alt={song.title}
                 fill
-                className="object-cover transition-transform duration-300 group-hover:scale-110"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
                 unoptimized
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500">
-                <Play className="h-12 w-12 text-white opacity-50" />
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-primary/10">
+                <Play className="h-10 w-10 text-primary opacity-50" />
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
-                <Play className="h-8 w-8 fill-white text-white" />
+
+            {/* Play overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30">
+                <Play className="h-6 w-6 fill-primary-foreground text-primary-foreground translate-x-0.5" />
               </div>
             </div>
           </div>
-          <div className="p-4">
-            <h3 className="font-semibold truncate mb-1">{song.title}</h3>
-            <p className="text-sm text-muted-foreground truncate mb-2">
-              {song.createdByUserName || "Anonymous"}
+
+          {/* Info */}
+          <div className="flex min-w-0 flex-1 flex-col p-4">
+            <p className="truncate text-sm font-semibold leading-snug text-foreground">
+              {song.title}
             </p>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="truncate">{song.prompt}</span>
-              <span className="ml-2 flex-shrink-0">👂 {song.listenCount}</span>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {song.createdByUserName ?? "Anonymous"}
+            </p>
+
+            <div className="mt-3 flex min-w-0 items-center justify-between border-t border-border/40 pt-3">
+              {song.prompt && (
+                <p className="mr-2 min-w-0 flex-1 truncate text-[11px] text-muted-foreground/60">
+                  {song.prompt}
+                </p>
+              )}
+              <div className="flex flex-shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                <Headphones className="h-3 w-3" />
+                {song.listenCount.toLocaleString()}
+              </div>
             </div>
           </div>
-        </Card>
+        </button>
       ))}
     </div>
   );

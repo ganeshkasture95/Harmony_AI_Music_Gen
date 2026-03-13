@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "~/lib/auth";
@@ -14,16 +14,14 @@ export async function setPublishedStatus(songId: string, published: boolean) {
   if (!session) redirect("/auth/sign-in");
 
   await db.song.update({
-    where: {
-      id: songId,
-      userId: session.user.id,
-    },
-    data: {
-      published,
-    },
+    where: { id: songId, userId: session.user.id },
+    data: { published },
   });
 
-  revalidatePath("/create");
+  // Bust user's track list + public song lists + dashboard stats
+  revalidateTag("user-songs");
+  revalidateTag("published-songs");
+  revalidateTag("home-stats");
 }
 
 export async function renameSong(songId: string, newTitle: string) {
@@ -34,16 +32,12 @@ export async function renameSong(songId: string, newTitle: string) {
   if (!session) redirect("/auth/sign-in");
 
   await db.song.update({
-    where: {
-      id: songId,
-      userId: session.user.id,
-    },
-    data: {
-      title: newTitle,
-    },
+    where: { id: songId, userId: session.user.id },
+    data: { title: newTitle },
   });
 
-  revalidatePath("/create");
+  // Only the user's track list changes
+  revalidateTag("user-songs");
 }
 
 export async function toggleLikeSong(songId: string) {
@@ -54,31 +48,18 @@ export async function toggleLikeSong(songId: string) {
   if (!session) redirect("/auth/sign-in");
 
   const existingLike = await db.like.findUnique({
-    where: {
-      userId_songId: {
-        userId: session.user.id,
-        songId,
-      },
-    },
+    where: { userId_songId: { userId: session.user.id, songId } },
   });
 
   if (existingLike) {
     await db.like.delete({
-      where: {
-        userId_songId: {
-          userId: session.user.id,
-          songId,
-        },
-      },
+      where: { userId_songId: { userId: session.user.id, songId } },
     });
   } else {
     await db.like.create({
-      data: {
-        userId: session.user.id,
-        songId,
-      },
+      data: { userId: session.user.id, songId },
     });
   }
 
-  revalidatePath("/");
+  revalidateTag("published-songs");
 }

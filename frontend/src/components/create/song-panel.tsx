@@ -117,7 +117,7 @@ export function SongPanel() {
   };
 
   return (
-    <div className="bg-muted/30 flex w-full flex-col border-r lg:w-80">
+    <div className="bg-muted/30 flex w-full shrink-0 flex-col border-r lg:w-80">
       <div className="flex-1 overflow-y-auto p-4">
         <Tabs
           value={mode}

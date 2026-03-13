@@ -16,7 +16,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex h-full flex-col lg:flex-row">
+    <div className="flex flex-1 min-w-0 overflow-hidden flex-col lg:flex-row">
       <SongPanel />
       <Suspense
         fallback={

@@ -1,5 +1,6 @@
 "use client";
 
+import { Zap } from "lucide-react";
 import { authClient } from "~/lib/auth-client";
 import { Button } from "../ui/button";
 
@@ -13,14 +14,16 @@ export default function Upgrade() {
       ],
     });
   };
+
   return (
     <Button
-      variant="outline"
+      variant="default"
       size="sm"
-      className="ml-2 cursor-pointer text-orange-400"
+      className="w-full gap-2 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30"
       onClick={upgrade}
     >
-      Upgrade
+      <Zap className="h-3.5 w-3.5 fill-current" />
+      Upgrade Plan
     </Button>
   );
 }

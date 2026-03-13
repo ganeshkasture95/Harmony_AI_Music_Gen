@@ -2,6 +2,8 @@
 
 import {
   Download,
+  EyeOff,
+  Globe,
   Loader2,
   MoreHorizontal,
   Music,
@@ -23,6 +25,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
@@ -31,7 +34,7 @@ import { RenameDialog } from "./rename-dialog";
 export interface Track {
   id: string;
   title: string | null;
-  createdAt: Date;
+  createdAt: Date | string;   // string when coming through the cache (JSON-serialised)
   instrumental: boolean;
   prompt: string | null;
   lyrics: string | null;
@@ -53,16 +56,10 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
   const setTrack = usePlayerStore((state) => state.setTrack);
 
   const handleTrackSelect = async (track: Track) => {
-    // Don't allow playing songs that aren't processed yet
     if (track.status !== "processed" || loadingTrackId) return;
-    
     setLoadingTrackId(track.id);
     const playUrl = await getPlayUrl(track.id);
     setLoadingTrackId(null);
-
-    // play the song in the music player 
-    console.log(playUrl)
-
     setTrack({
       id: track.id,
       title: track.title,
@@ -86,16 +83,17 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
   );
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-scroll">
-      <div className="flex-1 p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="relative max-w-md flex-1">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+    <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+      <div className="p-5">
+        {/* Toolbar */}
+        <div className="mb-5 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="pl-10"
+              placeholder="Search tracks…"
+              className="h-9 rounded-lg border-border/60 bg-card pl-9 text-sm placeholder:text-muted-foreground/60"
             />
           </div>
           <Button
@@ -103,184 +101,209 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
+            className="h-9 gap-1.5 border-border/60 text-muted-foreground hover:text-foreground"
           >
             {isRefreshing ? (
-              <Loader2 className="mr-2 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <RefreshCcw className="mr-2" />
+              <RefreshCcw className="h-3.5 w-3.5" />
             )}
             Refresh
           </Button>
         </div>
 
         {/* Track list */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           {filteredTracks.length > 0 ? (
             filteredTracks.map((track) => {
-              switch (track.status) {
-                case "failed":
-                  return (
-                    <div
-                      key={track.id}
-                      className="flex cursor-not-allowed items-center gap-4 rounded-lg p-3"
-                    >
-                      <div className="bg-destructive/10 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md">
-                        <XCircle className="text-destructive h-6 w-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-destructive truncate text-sm font-medium">
-                          Generation failed
-                        </h3>
-                        <p className="text-muted-foreground truncate text-xs">
-                          Please try creating the song again.
-                        </p>
-                      </div>
+              /* ── Failed ── */
+              if (track.status === "failed") {
+                return (
+                  <div
+                    key={track.id}
+                    className="flex cursor-not-allowed items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5"
+                  >
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-destructive/10">
+                      <XCircle className="h-5 w-5 text-destructive" />
                     </div>
-                  );
-
-                case "no credits":
-                  return (
-                    <div
-                      key={track.id}
-                      className="flex cursor-not-allowed items-center gap-4 rounded-lg p-3"
-                    >
-                      <div className="bg-destructive/10 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md">
-                        <XCircle className="text-destructive h-6 w-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-destructive truncate text-sm font-medium">
-                          Not enough credits
-                        </h3>
-                        <p className="text-muted-foreground truncate text-xs">
-                          Please purchase more credits to generate this song.
-                        </p>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-destructive">Generation failed</p>
+                      <p className="text-xs text-muted-foreground">Please try again.</p>
                     </div>
-                  );
+                  </div>
+                );
+              }
 
-                case "queued":
-                case "processing":
-                  return (
-                    <div
-                      key={track.id}
-                      className="flex cursor-not-allowed items-center gap-4 rounded-lg p-3"
-                    >
-                      <div className="bg-muted flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md">
-                        <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-muted-foreground truncate text-sm font-medium">
-                          Processing song...
-                        </h3>
-                        <p className="text-muted-foreground truncate text-xs">
-                          Refresh to check the status.
-                        </p>
-                      </div>
+              /* ── No credits ── */
+              if (track.status === "no credits") {
+                return (
+                  <div
+                    key={track.id}
+                    className="flex cursor-not-allowed items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5"
+                  >
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-destructive/10">
+                      <XCircle className="h-5 w-5 text-destructive" />
                     </div>
-                  );
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-destructive">Insufficient credits</p>
+                      <p className="text-xs text-muted-foreground">Purchase more credits to generate.</p>
+                    </div>
+                  </div>
+                );
+              }
 
-                default:
-                  return (
-                    <div
-                      key={track.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors"
-                      onClick={() => handleTrackSelect(track)}
+              /* ── Queued / Processing ── */
+              if (track.status === "queued" || track.status === "processing") {
+                return (
+                  <div
+                    key={track.id}
+                    className="flex cursor-wait items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5"
+                  >
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {track.title ?? "Processing song…"}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {track.status} · refresh to update
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="border-primary/30 bg-primary/10 text-primary text-[10px]"
                     >
-                      {/* Thumbnail */}
-                      <div className="group relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
-                        {track.thumbnailUrl ? (
-                          <Image
-                            src={track.thumbnailUrl}
-                            alt={track.title ?? "Track Thumbnail"}
-                            width={48}
-                            height={48}
-                            className="h-full w-full object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="bg-muted flex h-full w-full items-center justify-center">
-                            <Music className="text-muted-foreground h-6 w-6" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-                          {loadingTrackId === track.id ? (
-                            <Loader2 className="animate-spin text-white" />
-                          ) : (
-                            <Play className="fill-white text-white" />
-                          )}
-                        </div>
-                      </div>
+                      {track.status}
+                    </Badge>
+                  </div>
+                );
+              }
 
-                      {/* Track info */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="trucate text-sm font-medium">
-                            {track.title}
-                          </h3>
-                          {track.instrumental && (
-                            <Badge variant="outline">Instrumental</Badge>
-                          )}
-                        </div>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {track.prompt}
-                        </p>
+              /* ── Processed ── */
+              return (
+                <div
+                  key={track.id}
+                  className="group flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-border/60 hover:bg-card"
+                  onClick={() => handleTrackSelect(track)}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                    {track.thumbnailUrl ? (
+                      <Image
+                        src={track.thumbnailUrl}
+                        alt={track.title ?? "Track"}
+                        width={40}
+                        height={40}
+                        className="h-full w-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Music className="h-4 w-4 text-muted-foreground" />
                       </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity group-hover:opacity-100">
+                      {loadingTrackId === track.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      ) : (
+                        <Play className="h-4 w-4 fill-primary text-primary" />
+                      )}
+                    </div>
+                  </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {track.title ?? "Untitled"}
+                      </p>
+                      {track.instrumental && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          Instrumental
+                        </Badge>
+                      )}
+                    </div>
+                    {track.prompt && (
+                      <p className="truncate text-xs text-muted-foreground">
+                        {track.prompt}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions — single always-visible menu button */}
+                  <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        {/* Publish / Unpublish */}
+                        <DropdownMenuItem
                           onClick={async (e) => {
                             e.stopPropagation();
-                            await setPublishedStatus(
-                              track.id,
-                              !track.published,
-                            );
+                            await setPublishedStatus(track.id, !track.published);
                           }}
-                          variant="outline"
-                          size="sm"
-                          className={`cursor-pointer ${track.published ? "border-red-200" : ""}`}
+                          className={
+                            track.published
+                              ? "text-destructive focus:text-destructive"
+                              : "text-primary focus:text-primary"
+                          }
                         >
-                          {track.published ? "Unpublish" : "Publish"}
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const playUrl = await getPlayUrl(track.id);
-                                window.open(playUrl, "_blank");
-                              }}
-                            >
-                              <Download className="mr-2" /> Download
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setTrackToRename(track);
-                            }}
-                            >
-                              <Pencil className="mr-2" /> Rename
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  );
-              }
+                          {track.published ? (
+                            <>
+                              <EyeOff className="mr-2 h-4 w-4" /> Unpublish
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="mr-2 h-4 w-4" /> Publish
+                            </>
+                          )}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const playUrl = await getPlayUrl(track.id);
+                            window.open(playUrl, "_blank");
+                          }}
+                        >
+                          <Download className="mr-2 h-4 w-4" /> Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTrackToRename(track);
+                          }}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" /> Rename
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
             })
           ) : (
-            <div className="flex flex-col items-center justify-center pt-20 text-center">
-              <Music className="text-muted-foreground h-10 w-10" />
-              <h2 className="mt-4 text-lg font-semibold">No Music Yet</h2>
-              <p className="text-muted-foreground mt-1 text-sm">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border/60 bg-card/40 py-20 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Music className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">
+                {searchQuery ? "No results found" : "No tracks yet"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 {searchQuery
-                  ? "No tracks match your search."
-                  : "Create your first song to get started."}
+                  ? "Try a different search term."
+                  : "Generate your first song to get started."}
               </p>
             </div>
           )}

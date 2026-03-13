@@ -1,56 +1,45 @@
 "use client";
 
-import { useState } from "react";
 import { Search } from "lucide-react";
+import { useState } from "react";
 import { Input } from "../ui/input";
-import { PublishedSongs, PublishedSong } from "./published-songs";
+import { PublishedSong, PublishedSongs } from "./published-songs";
 
 export function SearchablePublishedSongs({ songs }: { songs: PublishedSong[] }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredSongs = songs.filter((song) => {
-    const query = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase();
     return (
-      song.title?.toLowerCase().includes(query) ||
-      song.createdByUserName?.toLowerCase().includes(query) ||
-      song.prompt?.toLowerCase().includes(query)
+      song.title?.toLowerCase().includes(q) ||
+      song.createdByUserName?.toLowerCase().includes(q) ||
+      song.prompt?.toLowerCase().includes(q)
     );
   });
 
   return (
-    <div className="space-y-6">
-      {/* Search Bar */}
+    <div className="space-y-5">
+      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           type="text"
-          placeholder="Search songs by title, artist, or prompt..."
+          placeholder="Search by title, artist or prompt…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-12 text-base"
+          className="h-10 rounded-lg border-border/60 bg-card pl-10 text-sm placeholder:text-muted-foreground/60 focus-visible:ring-primary/40"
         />
       </div>
 
-      {/* Results Count */}
+      {/* Result count */}
       {searchQuery && (
-        <div className="text-sm text-muted-foreground">
-          Found {filteredSongs.length} {filteredSongs.length === 1 ? "song" : "songs"}
-          {searchQuery && ` matching "${searchQuery}"`}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          {filteredSongs.length} {filteredSongs.length === 1 ? "result" : "results"} for &ldquo;{searchQuery}&rdquo;
+        </p>
       )}
 
-      {/* Songs Grid */}
-      {filteredSongs.length > 0 ? (
-        <PublishedSongs songs={filteredSongs} />
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            {searchQuery
-              ? `No songs found matching "${searchQuery}"`
-              : "No published songs yet. Be the first to publish!"}
-          </p>
-        </div>
-      )}
+      {/* Grid */}
+      <PublishedSongs songs={filteredSongs} />
     </div>
   );
 }

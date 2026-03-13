@@ -1,7 +1,6 @@
 "use server";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { auth } from "~/lib/auth";
 import { db } from "~/server/db";
 
@@ -18,9 +17,8 @@ export async function Credits() {
   });
 
   return (
-    <>
-      <p className="font-semibold">{user.credits}</p>
-      <p className="text-muted-foreground">Credits</p>
-    </>
+    <span className="text-sm font-semibold text-foreground">
+      {user.credits}
+    </span>
   );
 }
