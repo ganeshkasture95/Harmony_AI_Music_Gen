@@ -8,17 +8,17 @@ import {
   Play,
   Volume2,
 } from "lucide-react";
-import { usePlayerStore } from "~/stores/use-player-store";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
 import { useEffect, useRef, useState } from "react";
-import { Slider } from "./ui/slider";
+import { usePlayerStore } from "~/stores/use-player-store";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Slider } from "./ui/slider";
 
 export default function SoundBar() {
   const { track } = usePlayerStore();

@@ -70,7 +70,8 @@ export async function getPlayUrl(songId: string) {
 
   if (!session) redirect("/auth/sign-in");
 
-  const song = await db.song.findUniqueOrThrow({
+  // Use findFirstOrThrow because we are applying multiple filters (id + ownership/published + non-null s3Key)
+  const song = await db.song.findFirstOrThrow({
     where: {
       id: songId,
       OR: [{ userId: session.user.id }, { published: true }],

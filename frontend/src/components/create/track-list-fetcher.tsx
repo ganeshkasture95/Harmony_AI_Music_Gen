@@ -17,7 +17,9 @@ export default async function TrackListFetcher() {
   }
 
   const songs = await db.song.findMany({
-    where: { userId: session?.user?.id },
+    where: {
+      userId: session?.user?.id,
+    },
     include: {
       user: {
         select: { name: true },
@@ -30,6 +32,7 @@ export default async function TrackListFetcher() {
 
   const songsWithThumbnails = await Promise.all(
     songs.map(async (song) => {
+      // Only get presigned URL for thumbnail if it exists (processed songs)
       const thumbnailUrl = song.thumbnailS3Key
         ? await getPresignedUrl(song.thumbnailS3Key)
         : null;

@@ -11,9 +11,12 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-// import { usePlayerStore } from "~/stores/use-player-store";
+import { getPlayUrl } from "~/actions/generation";
+import { renameSong, setPublishedStatus } from "~/actions/song";
+import { usePlayerStore } from "~/stores/use-player-store";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -23,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
+import { RenameDialog } from "./rename-dialog";
 
 export interface Track {
   id: string;
@@ -46,22 +50,27 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
   const [trackToRename, setTrackToRename] = useState<Track | null>(null);
   const router = useRouter();
-  // const setTrack = usePlayerStore((state) => state.setTrack);
+  const setTrack = usePlayerStore((state) => state.setTrack);
 
   const handleTrackSelect = async (track: Track) => {
-    if (loadingTrackId) return;
+    // Don't allow playing songs that aren't processed yet
+    if (track.status !== "processed" || loadingTrackId) return;
+    
     setLoadingTrackId(track.id);
-    // const playUrl = await getPlayUrl(track.id);
+    const playUrl = await getPlayUrl(track.id);
     setLoadingTrackId(null);
 
-    // setTrack({
-    //   id: track.id,
-    //   title: track.title,
-    //   url: playUrl,
-    //   artwork: track.thumbnailUrl,
-    //   prompt: track.prompt,
-    //   createdByUserName: track.createdByUserName,
-    // });
+    // play the song in the music player 
+    console.log(playUrl)
+
+    setTrack({
+      id: track.id,
+      title: track.title,
+      url: playUrl,
+      artwork: track.thumbnailUrl,
+      prompt: track.prompt,
+      createdByUserName: track.createdByUserName,
+    });
   };
 
   const handleRefresh = async () => {
@@ -180,12 +189,14 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
                       {/* Thumbnail */}
                       <div className="group relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
                         {track.thumbnailUrl ? (
-                         <img 
-                          src={track.thumbnailUrl}
-                          alt={track.title ?? "Track Thumbnail"}
-                          className="h-full w-full object-cover"
+                          <Image
+                            src={track.thumbnailUrl}
+                            alt={track.title ?? "Track Thumbnail"}
+                            width={48}
+                            height={48}
+                            className="h-full w-full object-cover"
+                            unoptimized
                           />
-
                         ) : (
                           <div className="bg-muted flex h-full w-full items-center justify-center">
                             <Music className="text-muted-foreground h-6 w-6" />
@@ -218,13 +229,13 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
                       {/* Actions */}
                       <div className="flex items-center gap-2">
                         <Button
-                          // onClick={async (e) => {
-                          //   e.stopPropagation();
-                          //   await setPublishedStatus(
-                          //     track.id,
-                          //     !track.published,
-                          //   );
-                          // }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await setPublishedStatus(
+                              track.id,
+                              !track.published,
+                            );
+                          }}
                           variant="outline"
                           size="sm"
                           className={`cursor-pointer ${track.published ? "border-red-200" : ""}`}
@@ -239,19 +250,19 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const playUrl = await getPlayUrl(track.id);
-                              window.open(playUrl, "_blank");
-                            }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const playUrl = await getPlayUrl(track.id);
+                                window.open(playUrl, "_blank");
+                              }}
                             >
                               <Download className="mr-2" /> Download
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                            // onClick={async (e) => {
-                            //   e.stopPropagation();
-                            //   setTrackToRename(track);
-                            // }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setTrackToRename(track);
+                            }}
                             >
                               <Pencil className="mr-2" /> Rename
                             </DropdownMenuItem>
@@ -276,13 +287,13 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
         </div>
       </div>
 
-      {/* {trackToRename && (
+      {trackToRename && (
         <RenameDialog
           track={trackToRename}
           onClose={() => setTrackToRename(null)}
           onRename={(trackId, newTitle) => renameSong(trackId, newTitle)}
         />
-      )} */}
+      )}
     </div>
   );
 }
